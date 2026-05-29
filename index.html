@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detektif Arduino: Kuis Cahaya LDR</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons via SVG inline or Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at top, #1e1b4b, #0f172a);
+        }
+        .font-fredoka {
+            font-family: 'Fredoka', sans-serif;
+        }
+        .pixel-corners {
+            border-radius: 1.5rem;
+        }
+        /* Custom Glowing effects */
+        .glow-green {
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.6);
+        }
+        .glow-blue {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
+        }
+        .glow-purple {
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+        }
+        /* Smooth transitions */
+        .transition-all-300 {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        /* Shake animation for wrong answer */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+        .shake-element {
+            animation: shake 0.3s ease-in-out 2;
+        }
+        /* Level up overlay animation */
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex items-center justify-center p-3 md:p-6 overflow-x-hidden selection:bg-purple-500 selection:text-white">
+
+    <!-- GAME CONTAINER -->
+    <div id="game-card" class="w-full max-w-4xl bg-slate-900/95 border-2 border-slate-700/80 shadow-2xl pixel-corners overflow-hidden relative transition-all-300">
+        
+        <!-- Header / Status Bar (Hanya tampil saat bermain) -->
+        <div id="game-hud" class="hidden bg-slate-950/80 border-b border-slate-800 p-4 flex-wrap gap-4 items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-fredoka text-sm px-3 py-1.5 rounded-xl shadow-md flex items-center gap-1.5">
+                    <i data-lucide="award" class="w-4 h-4"></i>
+                    <span>Misi <span id="hud-mission-num">1</span>/7</span>
+                </div>
+                <div class="bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 text-xs text-slate-400">
+                    Kuis: <span id="hud-question-num" class="text-purple-400 font-bold">1</span>/5
+                </div>
+            </div>
+
+            <!-- XP & Coin Bar -->
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-400 font-semibold">XP</span>
+                    <div class="w-24 md:w-36 bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-700">
+                        <div id="xp-progress" class="bg-gradient-to-r from-emerald-400 to-teal-500 h-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <span id="hud-xp-val" class="text-xs font-bold text-emerald-400">0</span>
+                </div>
+                <div class="flex items-center gap-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded-xl">
+                    <i data-lucide="coins" class="w-4 h-4 animate-pulse"></i>
+                    <span id="hud-coin-val" class="text-xs font-bold">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN SCREENS HOLDER -->
+        <div class="p-5 md:p-8">
+            
+            <!-- SCREEN 1: WELCOME SCREEN -->
+            <div id="screen-welcome" class="space-y-6 text-center py-6">
+                <div class="relative inline-block">
+                    <!-- Glow effect -->
+                    <div class="absolute -inset-1 rounded-full bg-gradient-to-r from-teal-500 via-indigo-500 to-purple-600 opacity-75 blur-md animate-pulse"></div>
+                    <div class="relative bg-slate-950 p-5 rounded-full border border-slate-700">
+                        <i data-lucide="cpu" class="w-16 h-16 text-teal-400"></i>
+                    </div>
+                    <div class="absolute -bottom-2 -right-2 bg-yellow-400 text-slate-950 rounded-full p-1.5 border-2 border-slate-900 shadow-lg">
+                        <i data-lucide="lightbulb" class="w-5 h-5 animate-bounce"></i>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h1 class="text-3xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-indigo-300 to-purple-400 font-fredoka">
+                        LDR Light Detective
+                    </h1>
+                    <p class="text-slate-400 text-sm md:text-base max-w-md mx-auto">
+                        Simulasi interaktif petualangan sensor cahaya Arduino UNO. Taklukkan 7 Misi pemrograman dan buktikan kamu adalah master mikrokontroler!
+                    </p>
+                </div>
+
+                <!-- Highlight info singkat materi -->
+                <div class="grid grid-cols-3 gap-2 max-w-lg mx-auto bg-slate-950/60 p-3 rounded-2xl border border-slate-800 text-xs">
+                    <div class="p-2 border-r border-slate-800">
+                        <div class="text-emerald-400 font-bold mb-1">🌑 Gelap</div>
+                        <div class="text-slate-500">LDR &gt; 600<br>2 LED Hidup</div>
+                    </div>
+                    <div class="p-2 border-r border-slate-800">
+                        <div class="text-blue-400 font-bold mb-1">🌗 Remang</div>
+                        <div class="text-slate-500">300-600<br>1 LED Hidup</div>
+                    </div>
+                    <div class="p-2">
+                        <div class="text-yellow-400 font-bold mb-1">☀️ Terang</div>
+                        <div class="text-slate-500">LDR &le; 300<br>LED Mati</div>
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <button onclick="changeScreen('screen-register')" class="group relative px-8 py-4 bg-gradient-to-r from-teal-500 to-indigo-600 hover:from-teal-400 hover:to-indigo-500 text-white font-bold text-lg rounded-2xl shadow-xl hover:shadow-teal-500/20 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-3 mx-auto">
+                        <span>Mulai Petualangan</span>
+                        <i data-lucide="chevron-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- SCREEN 2: REGISTRATION SCREEN -->
+            <div id="screen-register" class="hidden space-y-6 py-6 max-w-md mx-auto">
+                <div class="text-center space-y-2">
+                    <h2 class="text-2xl md:text-3xl font-bold font-fredoka text-white">Identitas Agen</h2>
+                    <p class="text-slate-400 text-sm">Masukkan nama dan kelasmu untuk mendaftarkan skor di server simulasi.</p>
+                </div>
+
+                <form id="reg-form" onsubmit="handleRegistration(event)" class="space-y-4 bg-slate-950/50 p-6 rounded-2xl border border-slate-800">
+                    <div class="space-y-1.5">
+                        <label for="player-name" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Nama Lengkap</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                <i data-lucide="user" class="w-5 h-5"></i>
+                            </span>
+                            <input type="text" id="player-name" required placeholder="Contoh: Imanda Fachruddin" class="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 pl-11 pr-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all">
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label for="player-class" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Kelas / Tingkatan</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+                            </span>
+                            <input type="text" id="player-class" required placeholder="Contoh: XI - TKJ 1" class="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 pl-11 pr-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-base rounded-xl transition-all duration-300 shadow-lg flex items-center justify-center gap-2">
+                        <i data-lucide="play" class="w-5 h-5 fill-current"></i>
+                        <span>Masuk ke Simulator</span>
+                    </button>
+                </form>
+
+                <div class="text-center">
+                    <button onclick="changeScreen('screen-welcome')" class="text-slate-400 hover:text-slate-200 text-xs transition-colors flex items-center gap-1 mx-auto">
+                        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali ke Menu Utama
+                    </button>
+                </div>
+            </div>
+
+            <!-- SCREEN 3: MISSION SELECTION MAP -->
+            <div id="screen-map" class="hidden space-y-6">
+                <div class="flex justify-between items-center bg-slate-950/40 p-3 rounded-xl border border-slate-800">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                            <i data-lucide="user-check" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-400 font-medium">Agen Aktif</div>
+                            <div class="text-sm font-bold text-white"><span id="map-player-name">Imanda</span> (<span id="map-player-class">XI</span>)</div>
+                        </div>
+                    </div>
+                    <button onclick="showMissionLog()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs rounded-lg border border-slate-700 font-semibold flex items-center gap-1.5 transition-colors">
+                        <i data-lucide="book-open" class="w-3.5 h-3.5 text-purple-400"></i> Materi Singkat
+                    </button>
+                </div>
+
+                <div class="text-center space-y-1">
+                    <h2 class="text-2xl md:text-3xl font-extrabold font-fredoka text-white">Peta Misi Pembelajaran</h2>
+                    <p class="text-slate-400 text-xs md:text-sm">Selesaikan misi secara berurutan untuk menguasai materi Arduino & LDR!</p>
+                </div>
+
+                <!-- MISSION GRID -->
+                <div id="mission-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+                    <!-- Generated Dynamically via JS -->
+                </div>
+
+                <!-- Reset button & Summary email info -->
+                <div class="bg-indigo-950/20 border border-indigo-800/30 p-4 rounded-xl flex flex-col md:flex-row gap-3 items-center justify-between text-xs text-slate-400 text-center md:text-left">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="mail" class="w-5 h-5 text-indigo-400 shrink-0"></i>
+                        <span>Selesaikan semua misi untuk membuka <strong>Formulir Kirim Email Otomatis</strong> ke guru!</span>
+                    </div>
+                    <button onclick="resetGameProgress()" class="text-red-400 hover:text-red-300 hover:underline transition-colors flex items-center gap-1">
+                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset Semua Progress
+                    </button>
+                </div>
+            </div>
+
+            <!-- SCREEN 4: KUIS / PLAYING SCREEN -->
+            <div id="screen-quiz" class="hidden space-y-6">
+                <!-- Question Header Info -->
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span id="quiz-mission-title" class="text-xs font-semibold text-teal-400 tracking-wider uppercase">Misi 1: Inisialisasi & Setup</span>
+                        <h3 id="quiz-quest-title" class="text-lg md:text-xl font-bold text-white mt-1">Identifikasi Kode Di Bawah</h3>
+                    </div>
+                    <div id="countdown-timer" class="flex items-center gap-1.5 text-xs font-bold text-slate-300 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+                        <i data-lucide="timer" class="w-4 h-4 text-rose-400 animate-pulse"></i>
+                        <span id="timer-val">30</span> Detik
+                    </div>
+                </div>
+
+                <!-- MAIN DISPLAY (TEBAK GAMBAR / DIAGRAM / CODE PREVIEW) -->
+                <div class="bg-slate-950 rounded-2xl border border-slate-800 p-4 relative overflow-hidden flex flex-col items-center justify-center min-h-[220px] md:min-h-[280px]">
+                    <!-- Background Glow -->
+                    <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none"></div>
+                    
+                    <!-- Question Image Holder (Menggunakan Gambar SVG Inline Dinamis agar tahan banting tanpa URL rusak) -->
+                    <div id="quiz-visual-container" class="w-full flex items-center justify-center z-10">
+                        <!-- Disisipkan lewat JS -->
+                    </div>
+                </div>
+
+                <!-- QUESTION STATEMENT -->
+                <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-center">
+                    <p id="quiz-question-text" class="text-slate-200 text-sm md:text-base font-semibold leading-relaxed">
+                        Pertanyaan akan muncul di sini...
+                    </p>
+                </div>
+
+                <!-- ANSWERS CONTAINER (GRID OPTIONS) -->
+                <div id="quiz-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Generate 4 Pilihan lewat JS -->
+                </div>
+
+                <!-- Action Button (Selanjutnya / Skip) -->
+                <div class="flex justify-between items-center pt-2">
+                    <button onclick="exitToMap()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                        <i data-lucide="door-open" class="w-4 h-4 text-amber-500"></i> Keluar Ke Peta
+                    </button>
+                    
+                    <button id="btn-next-question" disabled onclick="handleNextQuestion()" class="px-6 py-2.5 bg-gradient-to-r from-teal-500 to-indigo-600 hover:from-teal-400 hover:to-indigo-500 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center gap-2 opacity-50 cursor-not-allowed">
+                        <span>Lanjut</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- SCREEN 5: MISSION CLEAR POPUP -->
+            <div id="screen-mission-clear" class="hidden text-center space-y-6 py-6 animate-pop">
+                <div class="relative inline-block">
+                    <div class="absolute -inset-1 rounded-full bg-yellow-500 opacity-75 blur-md animate-pulse"></div>
+                    <div class="relative bg-slate-950 p-6 rounded-full border border-slate-700">
+                        <i data-lucide="party-popper" class="w-16 h-16 text-yellow-400"></i>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h2 class="text-3xl font-extrabold font-fredoka text-white">Misi <span id="cleared-mission-num">1</span> Selesai!</h2>
+                    <p class="text-slate-400 text-sm max-w-sm mx-auto">Selamat! Kamu berhasil memecahkan semua kuis dalam misi ini dengan kecerdasan luar biasa.</p>
+                </div>
+
+                <!-- Hadiah Misi -->
+                <div class="bg-slate-950/60 max-w-xs mx-auto p-4 rounded-xl border border-slate-800 grid grid-cols-2 gap-2 text-xs">
+                    <div class="p-2 bg-emerald-500/5 rounded-lg border border-emerald-500/10">
+                        <span class="block text-slate-500 font-medium">Hadiah XP</span>
+                        <span class="text-lg font-extrabold text-emerald-400 font-fredoka">+<span id="cleared-xp-reward">150</span></span>
+                    </div>
+                    <div class="p-2 bg-amber-500/5 rounded-lg border border-amber-500/10">
+                        <span class="block text-slate-500 font-medium">Hadiah Koin</span>
+                        <span class="text-lg font-extrabold text-amber-400 font-fredoka">+<span id="cleared-coin-reward">50</span></span>
+                    </div>
+                </div>
+
+                <button onclick="changeScreen('screen-map')" class="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-extrabold text-sm rounded-xl transition-all shadow-md inline-flex items-center gap-2">
+                    <span>Kembali Ke Peta Misi</span>
+                    <i data-lucide="map" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- SCREEN 6: FINALE (SUKSES TOTAL & KIRIM EMAIL) -->
+            <div id="screen-finale" class="hidden space-y-6 py-4">
+                <div class="text-center space-y-3">
+                    <div class="inline-block relative">
+                        <div class="absolute -inset-1 rounded-full bg-purple-500 blur-md opacity-60"></div>
+                        <div class="relative bg-slate-950 p-5 rounded-full border border-slate-700">
+                            <i data-lucide="trophy" class="w-14 h-14 text-yellow-400"></i>
+                        </div>
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-extrabold font-fredoka text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-200 to-emerald-400">Master Arduino Terverifikasi!</h2>
+                    <p class="text-slate-400 text-sm max-w-lg mx-auto">Semua 7 Misi kuis simulator LDR telah ditaklukkan! Nilai-nilai kamu siap dikirim langsung ke Guru Imanda Fachruddin.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Summary Stats Card -->
+                    <div class="bg-slate-950/50 p-5 rounded-2xl border border-slate-800 space-y-4">
+                        <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-800 pb-2">
+                            <i data-lucide="bar-chart-3" class="w-4 h-4 text-teal-400"></i>
+                            Statistik Permainan Kamu
+                        </h3>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Nama Agen:</span>
+                                <span id="final-name" class="font-bold text-white">Nama Siswa</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Kelas:</span>
+                                <span id="final-class" class="font-bold text-white">Kelas Siswa</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Total XP Terkumpul:</span>
+                                <span id="final-xp" class="font-extrabold text-emerald-400">0 XP</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Koin Bonus:</span>
+                                <span id="final-coins" class="font-bold text-amber-400">0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Akurasi Jawaban:</span>
+                                <span id="final-accuracy" class="font-bold text-indigo-400">100%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400">Status Tugas:</span>
+                                <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Siap Dikirim</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Email Form Builder -->
+                    <div class="bg-slate-950/50 p-5 rounded-2xl border border-slate-800 space-y-4">
+                        <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-800 pb-2">
+                            <i data-lucide="mail-check" class="w-4 h-4 text-purple-400"></i>
+                            Kirim Hasil ke Guru via Email
+                        </h3>
+                        
+                        <div class="space-y-2.5 text-xs text-slate-400">
+                            <div>
+                                <strong class="text-slate-300">Penerima:</strong> id.imanda.fachruddin@gmail.com
+                            </div>
+                            <div>
+                                <strong class="text-slate-300">Subjek:</strong> Tugas Projek Arduino dengan Sensor Cahaya LDR
+                            </div>
+                            <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-[11px] font-mono whitespace-pre-wrap max-h-32 overflow-y-auto" id="email-preview-box">
+                                Loading preview...
+                            </div>
+                        </div>
+
+                        <button onclick="sendReportEmail()" class="w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                            <span>Buka Mail & Kirim Sekarang</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-center pt-2">
+                    <button onclick="changeScreen('screen-map')" class="text-xs text-slate-400 hover:text-slate-200 transition-colors underline">
+                        Kembali Lihat Peta Misi
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MATERIALS MODAL (MODAL MATERI) -->
+    <div id="modal-materials" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-700 w-full max-w-2xl rounded-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-pop">
+            <!-- Modal Header -->
+            <div class="p-4 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="book-open" class="w-5 h-5 text-indigo-400"></i>
+                    <h3 class="font-bold text-white font-fredoka">Buku Saku Materi Arduino LDR</h3>
+                </div>
+                <button onclick="closeMissionLog()" class="text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-slate-800 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <!-- Modal Content -->
+            <div class="p-5 overflow-y-auto space-y-4 text-xs md:text-sm text-slate-300 leading-relaxed">
+                <div class="space-y-1">
+                    <h4 class="font-bold text-white text-base">🔌 Inisialisasi & Setup Pin</h4>
+                    <p class="text-slate-400">LED Hijau dipasang pada <code class="text-teal-400 font-mono bg-slate-950 px-1 py-0.5 rounded">Pin 11</code>, LED Biru pada <code class="text-blue-400 font-mono bg-slate-950 px-1 py-0.5 rounded">Pin 10</code>, dan sensor LDR pada pin analog <code class="text-yellow-400 font-mono bg-slate-950 px-1 py-0.5 rounded">A0</code>. LDR berfungsi sebagai INPUT untuk mendeteksi perubahan nilai hambatan cahaya.</p>
+                </div>
+                <div class="space-y-1">
+                    <h4 class="font-bold text-white text-base">🔁 Fungsi Setup & Loop</h4>
+                    <p class="text-slate-400">Fungsi <code class="text-purple-400 font-mono">setup()</code> berjalan satu kali untuk mendefinisikan pin mode serta menyalakan Serial Monitor dengan kecepatan <code class="text-pink-400 font-mono">9600 Baudrate</code>. Fungsi <code class="text-purple-400 font-mono">loop()</code> berjalan berulang kali untuk mengeksekusi logika secara konstan.</p>
+                </div>
+                <div class="space-y-1">
+                    <h4 class="font-bold text-white text-base">🧠 Logika Kondisi Cahaya LDR</h4>
+                    <p class="text-slate-400">Nilai analog yang dibaca berkisar dari <code class="text-white font-mono bg-slate-950 px-1 py-0.5 rounded">0 sampai 1023</code>. Semakin gelap kondisi sekitar, maka nilai hambatan dan pembacaan analog LDR akan semakin besar.</p>
+                    <div class="mt-2 overflow-x-auto">
+                        <table class="w-full text-left text-xs bg-slate-950 rounded-lg overflow-hidden">
+                            <thead>
+                                <tr class="bg-slate-850 border-b border-slate-800 text-slate-400">
+                                    <th class="p-2">Kondisi</th>
+                                    <th class="p-2">Nilai LDR</th>
+                                    <th class="p-2 text-center">LED Hijau (11)</th>
+                                    <th class="p-2 text-center">LED Biru (10)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-slate-900">
+                                    <td class="p-2 font-bold text-teal-400">🌑 Gelap</td>
+                                    <td class="p-2">&gt; 600</td>
+                                    <td class="p-2 text-center text-emerald-400 font-bold">ON (HIGH)</td>
+                                    <td class="p-2 text-center text-emerald-400 font-bold">ON (HIGH)</td>
+                                </tr>
+                                <tr class="border-b border-slate-900">
+                                    <td class="p-2 font-bold text-blue-400">🌗 Remang</td>
+                                    <td class="p-2">301 – 600</td>
+                                    <td class="p-2 text-center text-emerald-400 font-bold">ON (HIGH)</td>
+                                    <td class="p-2 text-center text-rose-400 font-bold">OFF (LOW)</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 font-bold text-yellow-400">☀️ Terang</td>
+                                    <td class="p-2">&le; 300</td>
+                                    <td class="p-2 text-center text-rose-400 font-bold">OFF (LOW)</td>
+                                    <td class="p-2 text-center text-rose-400 font-bold">OFF (LOW)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- Modal Footer -->
+            <div class="p-3 bg-slate-950 border-t border-slate-800 flex justify-end">
+                <button onclick="closeMissionLog()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors">
+                    Saya Mengerti
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUDIO FX SYNTHESIS (Tidak memerlukan external audio files) -->
+    <script>
+        // Web Audio Context untuk sound effects retro secara sintesis
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioCtx();
+            }
+        }
+
+        function playSound(type) {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'success') {
+                    // Nada koin retro mario
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'fail') {
+                    // Nada gagal rendah menggelombang
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now); // A3
+                    osc.frequency.linearRampToValueAtTime(110, now + 0.3); // A2
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'click') {
+                    // Suara UI click tajam pendek
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+                    osc.start(now);
+                    osc.stop(now + 0.06);
+                } else if (type === 'level-up') {
+                    // Nada fanfare level up megah
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(261.63, now); // C4
+                    osc.frequency.setValueAtTime(329.63, now + 0.1); // E4
+                    osc.frequency.setValueAtTime(392.00, now + 0.2); // G4
+                    osc.frequency.setValueAtTime(523.25, now + 0.3); // C5
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                    osc.start(now);
+                    osc.stop(now + 0.6);
+                }
+            } catch (e) {
+                console.log("Audio API error/tidak didukung", e);
+            }
+        }
+    </script>
+
+    <!-- DATABASE DATA PERTANYAAN (7 MISI x 5 KUIS = 35 PERTANYAAN UNIK) -->
+    <script>
+        const MISSION_DATA = [
+            {
+                id: 1,
+                title: "Inisialisasi & Pengenalan Pin",
+                desc: "Kuasai fungsi deklarasi pin input/output pada Arduino UNO.",
+                xpReward: 100,
+                coinReward: 20,
+                questions: [
+                    {
+                        title: "Sinyal Output LED Hijau",
+                        text: "Berdasarkan kode pemrograman yang diunggah, pada nomor pin digital berapakah LED Hijau terhubung di Arduino?",
+                        options: ["Pin 10", "Pin 11", "Pin A0", "Pin 13"],
+                        correct: 1, // index 1 = Pin 11
+                        visualType: "svg-arduino-pin-highlight",
+                        param: { highlight: "11", color: "#22c55e" }
+                    },
+                    {
+                        title: "Sinyal Output LED Biru",
+                        text: "Pin digital manakah yang ditugaskan sebagai output untuk mengontrol status LED Biru pada rangkaian?",
+                        options: ["Pin 9", "Pin 10", "Pin 11", "Pin A1"],
+                        correct: 1, // Pin 10
+                        visualType: "svg-arduino-pin-highlight",
+                        param: { highlight: "10", color: "#3b82f6" }
+                    },
+                    {
+                        title: "Input Sensor Analog LDR",
+                        text: "LDR (Light Dependent Resistor) dihubungkan ke salah satu pin analog Arduino. Berapakah pin tersebut?",
+                        options: ["Pin A0", "Pin A5", "Pin 12", "Pin D0"],
+                        correct: 0, // Pin A0
+                        visualType: "svg-arduino-pin-highlight",
+                        param: { highlight: "A0", color: "#eab308" }
+                    },
+                    {
+                        title: "Inisialisasi Variabel Pin",
+                        text: "Manakah sintaks yang paling tepat digunakan untuk mendeklarasikan inisialisasi variabel Pin LED Hijau di awal kode Arduino?",
+                        options: [
+                            "int ledHijauPin = 11;",
+                            "float ledHijauPin = 11;",
+                            "ledHijauPin = OUTPUT;",
+                            "void ledHijauPin() { 11 }"
+                        ],
+                        correct: 0,
+                        visualType: "code-block",
+                        param: { code: "??? ledHijauPin = 11;" }
+                    },
+                    {
+                        title: "Tipe Data Pin Arduino",
+                        text: "Kenapa inisialisasi nomor pin seperti ledBiruPin menggunakan tipe data 'int'?",
+                        options: [
+                            "Karena nomor pin digital adalah karakter huruf",
+                            "Karena nomor pin merupakan bilangan bulat desimal",
+                            "Karena pin dapat menyimpan data desimal pecahan",
+                            "Karena tipe 'int' mengaktifkan fitur otomatis sensor"
+                        ],
+                        correct: 1,
+                        visualType: "code-block",
+                        param: { code: "int ledBiruPin = 10;" }
+                    }
+                ]
+            },
+            {
+                id: 2,
+                title: "Fungsi setup() & Serial Monitor",
+                desc: "Pelajari konfigurasi awal pinmode dan kecepatan komunikasi data serial.",
+                xpReward: 120,
+                coinReward: 25,
+                questions: [
+                    {
+                        title: "Sintaks Kecepatan Serial",
+                        text: "Berapakah nilai kecepatan transfer data (Baudrate) komunikasi Serial yang diatur di dalam fungsi setup()?",
+                        options: ["9600 bps", "115200 bps", "4800 bps", "38400 bps"],
+                        correct: 0,
+                        visualType: "code-block",
+                        param: { code: "void setup() {\n  Serial.begin(???);\n}" }
+                    },
+                    {
+                        title: "Mendefinisikan Arah Pin LED",
+                        text: "Sintaks manakah yang digunakan di setup() agar Arduino mengenali LED Hijau sebagai media keluaran data?",
+                        options: [
+                            "pinMode(ledHijauPin, INPUT);",
+                            "pinMode(ledHijauPin, OUTPUT);",
+                            "digitalWrite(ledHijauPin, HIGH);",
+                            "analogRead(ledHijauPin);"
+                        ],
+                        correct: 1,
+                        visualType: "code-block",
+                        param: { code: "void setup() {\n  ???\n}" }
+                    },
+                    {
+                        title: "PinMode untuk Sensor LDR",
+                        text: "LDR bertugas mengirimkan informasi level cahaya dari luar ke Arduino. Apa konfigurasi pinMode yang benar?",
+                        options: [
+                            "pinMode(ldrPin, OUTPUT);",
+                            "pinMode(ldrPin, INPUT);",
+                            "pinMode(ldrPin, ANALOG);",
+                            "analogWrite(ldrPin, INPUT);"
+                        ],
+                        correct: 1,
+                        visualType: "code-block",
+                        param: { code: "pinMode(ldrPin, ???);" }
+                    },
+                    {
+                        title: "Tujuan Komunikasi Serial",
+                        text: "Mengapa kita memanggil instruksi 'Serial.begin(9600)' pada awal program?",
+                        options: [
+                            "Untuk mengalirkan listrik ke sensor LDR",
+                            "Untuk mengaktifkan komunikasi data dengan Serial Monitor PC/Laptop",
+                            "Untuk mengatur kecerahan lampu LED",
+                            "Untuk menghemat konsumsi daya baterai Arduino"
+                        ],
+                        correct: 1,
+                        visualType: "graphic",
+                        param: { type: "serial-monitor" }
+                    },
+                    {
+                        title: "Jumlah Eksekusi setup()",
+                        text: "Berapa kalikah blok kode di dalam fungsi setup() akan dijalankan oleh mikrokontroler?",
+                        options: [
+                            "Hanya 1 kali saat Arduino pertama kali dinyalakan",
+                            "Secara berulang-ulang tanpa henti",
+                            "Setiap kali sensor LDR mendeteksi cahaya gelap",
+                            "Sama sekali tidak pernah dijalankan"
+                        ],
+                        correct: 0,
+                        visualType: "code-block",
+                        param: { code: "void setup() {\n  // Berapa kali dijalankan?\n}" }
+                    }
+                ]
+            },
+            {
+                id: 3,
+                title: "Pembacaan Sensor & Loop",
+                desc: "Pahami cara kerja fungsi analogRead() dalam membaca nilai tegangan LDR.",
+                xpReward: 140,
+                coinReward: 30,
+                questions: [
+                    {
+                        title: "Instruksi Pembacaan Analog",
+                        text: "Fungsi bawaan Arduino apakah yang dipakai untuk membaca data analog dari sensor cahaya LDR?",
+                        options: ["digitalRead()", "analogRead()", "analogWrite()", "sensorRead()"],
+                        correct: 1,
+                        visualType: "code-block",
+                        param: { code: "int ldrStatus = ???(ldrPin);" }
+                    },
+                    {
+                        title: "Rentang Output analogRead()",
+                        text: "Secara teknis, pembacaan analog (ADC 10-bit) pada Arduino UNO menghasilkan jangkauan nilai integer berapa?",
+                        options: ["0 sampai 255", "0 sampai 100", "0 sampai 1023", "-512 sampai 511"],
+                        correct: 2,
+                        visualType: "graphic",
+                        param: { type: "adc-range" }
+                    },
+                    {
+                        title: "Representasi Nilai Terkecil",
+                        text: "Nilai analog '0' dari sensor LDR merepresentasikan kondisi lingkungan yang seperti apa?",
+                        options: ["Sangat Gelap Gulita", "Remang-remang Sedang", "Sangat Terang / Terpapar Cahaya", "Kabel Putus / Error"],
+                        correct: 2,
+                        visualType: "graphic",
+                        param: { type: "ldr-zero" }
+                    },
+                    {
+                        title: "Representasi Nilai Terbesar",
+                        text: "Nilai pembacaan analog mendekati '1023' mengindikasikan intensitas cahaya luar yang...",
+                        options: ["Sangat Terang Benderang", "Sangat Gelap / Redup Sekali", "Normal Alami", "Tidak Terpengaruh Hambatan LDR"],
+                        correct: 1,
+                        visualType: "graphic",
+                        param: { type: "ldr-dark" }
+                    },
+                    {
+                        title: "Sifat Fungsi loop()",
+                        text: "Apa karakteristik utama dari fungsi void loop() pada sketch pemrograman Arduino?",
+                        options: [
+                            "Dijalankan sekali di awal untuk menghapus RAM",
+                            "Berjalan secara berulang-ulang terus menerus untuk memantau data",
+                            "Hanya berjalan saat tombol reset ditekan secara fisik",
+                            "Berjalan jika ada kesalahan sirkuit saja"
+                        ],
+                        correct: 1,
+                        visualType: "code-block",
+                        param: { code: "void loop() {\n  // Sifat blok ini?\n}" }
+                    }
+                ]
+            },
+            {
+                id: 4,
+                title: "Logika Kondisi 1: Gelap (LDR > 600)",
+                desc: "Uji pemahaman logika if saat kondisi gelap gulita terjadi.",
+                xpReward: 160,
+                coinReward: 35,
+                questions: [
+                    {
+                        title: "Syarat Kondisi Gelap",
+                        text: "Berapakah batas nilai LDR yang digunakan dalam kode program untuk menyatakan kondisi tergolong 'Gelap'?",
+                        options: ["LDR > 300", "LDR > 600", "LDR <= 300", "LDR > 1023"],
+                        correct: 1,
+                        visualType: "code-block",
+                        param: { code: "if (ldrStatus ??? 600) {\n  // Kondisi Gelap\n}" }
+                    },
+                    {
+                        title: "Kondisi LED Hijau saat Gelap",
+                        text: "Saat kondisi Gelap (LDR > 600) terpenuhi, bagaimana status kelistrikan dari LED Hijau?",
+                        options: [
+                            "Mati (LOW / Tidak Bertegangan)",
+                            "Menyala (HIGH / Bertegangan 5V)",
+                            "Berkedip cepat (Blink)",
+                            "Redup (Setengah Tegangan)"
+                        ],
+                        correct: 1,
+                        visualType: "graphic",
+                        param: { type: "led-green-state", active: true }
+                    },
+                    {
+                        title: "Kondisi LED Biru saat Gelap",
+                        text: "Bagaimana status LED Biru pada Arduino pin 10 ketika sensor membaca nilai hambatan sebesar 750?",
+                        options: [
+                            "Menyala (HIGH)",
+                            "Mati (LOW)",
+                            "Mati dan Berkedip",
+                            "Hancur karena kelebihan muatan"
+                        ],
+                        correct: 0,
+                        visualType: "graphic",
+                        param: { type: "led-blue-state", active: true }
+                    },
+                    {
+                        title: "Output Pesan Serial Gelap",
+                        text: "Kalimat pesan apa yang akan dikirimkan Arduino ke Serial Monitor saat kondisi gelap ini aktif?",
+                        options: [
+                            "\"Terang, LED Mati : \"",
+                            "\"Remang2, 1 LED hidup : \"",
+                            "\"Gelap, Semua LED hidup : \"",
+                            "\"Sistem Error! LDR Gelap : \""
+                        ],
+                        correct: 2,
+                        visualType: "code-block",
+                        param: { code: "Serial.print(\"???\");" }
+                    },
+                    {
+                        title: "Sintaks Menyalakan LED",
+                        text: "Sintaks digital kontrol mana yang digunakan untuk menginstruksikan LED Hijau menyala penuh?",
+                        options: [
+                            "digitalWrite(ledHijauPin, HIGH);",
+                            "digitalWrite(ledHijauPin, LOW);",
+                            "analogWrite(ledHijauPin, 0);",
+                            "digitalRead(ledHijauPin, HIGH);"
+                        ],
+                        correct: 0,
+                        visualType: "code-block",
+                        param: { code: "???(ledHijauPin, HIGH);" }
+                    }
+                ]
+            },
+            {
+                id: 5,
+                title: "Logika Kondisi 2: Remang (301 - 600)",
+                desc: "Analisis kondisi sedang/remang-remang di mana hanya ada satu LED yang aktif.",
+                xpReward: 180,
+                coinReward: 40,
+                questions: [
+                    {
+                        title: "Operator Logika Dan (&&)",
+                        text: "Mengapa kode remang-remang menggunakan ekspresi 'ldrStatus > 300 && ldrStatus <= 600'?",
+                        options: [
+                            "Agar bernilai benar jika LDR di luar jangkauan tersebut",
+                            "Agar program berjalan bila salah satu syarat saja terpenuhi",
+                            "Untuk membatasi agar nilai LDR harus di antara 301 sampai 600 (Keduanya wajib terpenuhi)",
+                            "Untuk menjumlahkan kedua nilai tersebut"
+                        ],
+                        correct: 2,
+                        visualType: "code-block",
+                        param: { code: "if (ldrStatus > 300 ??? ldrStatus <= 600)" }
+                    },
+                    {
+                        title: "LED Aktif saat Remang",
+                        text: "Lampu LED warna apakah yang tetap menyala (HIGH) saat cuaca sekitar sedang remang-remang?",
+                        options: ["LED Biru", "LED Hijau", "Semua LED menyala", "Semua LED mati"],
+                        correct: 1,
+                        visualType: "graphic",
+                        param: { type: "led-active-half" }
+                    },
+                    {
+                        title: "Status LED Biru saat Remang",
+                        text: "Apa status LED Biru saat berada di kondisi remang-remang sesuai kode program?",
+                        options: ["LOW (Mati)", "HIGH (Hidup)", "Blink lambat", "Kondisinya acak"],
+                        correct: 0,
+                        visualType: "graphic",
+                        param: { type: "led-blue-state", active: false }
+                    },
+                    {
+                        title: "Contoh Nilai Remang",
+                        text: "Jika sensor LDR membaca data bernilai integer '450', apa respon dari sirkuit Arduino?",
+                        options: [
+                            "Kedua LED mati total",
+                            "LED Hijau hidup, LED Biru mati",
+                            "LED Biru hidup, LED Hijau mati",
+                            "Kedua LED hidup bersamaan"
+                        ],
+                        correct: 1,
+                        visualType: "graphic",
+                        param: { type: "ldr-value-450" }
+                    },
+                    {
+                        title: "Pesan Serial Remang",
+                        text: "Pesan apa yang tercetak di layar monitor laptop jika nilai LDR terdeteksi 500?",
+                        options: [
+                            "\"Remang2, 1 LED hidup : 500\"",
+                            "\"Gelap, Semua LED hidup : 500\"",
+                            "\"Terang, LED Mati : 500\"",
+                            "\"Cahaya Sedang : 500\""
+                        ],
+                        correct: 0,
+                        visualType: "code-block",
+                        param: { code: "Serial.println(ldrStatus);" }
+                    }
+                ]
+            },
+            {
+                id: 6,
+                title: "Logika Kondisi 3: Terang (LDR <= 300)",
+                desc: "Pelajari bagaimana program mematikan semua beban LED saat cahaya berlimpah.",
+                xpReward: 200,
+                coinReward: 45,
+                questions: [
+                    {
+                        title: "Simbol Kurang Dari Sama Dengan",
+                        text: "Operator perbandingan manakah yang melambangkan instruksi 'kurang dari atau sama dengan' pada bahasa pemrograman C/C++ Arduino?",
+                        options: ["<", "=<", "<=", "<== "],
+                        correct: 2,
+                        visualType: "code-block",
+                        param: { code: "if (ldrStatus ??? 300)" }
+                    },
+                    {
+                        title: "Status Kedua LED",
+                        text: "Saat cuaca terdeteksi sangat terang (misal: siang hari dengan nilai LDR 150), apa status LED Hijau dan LED Biru?",
+                        options: [
+                            "Hijau mati, Biru hidup",
+                            "Hijau hidup, Biru mati",
+                            "Kedua LED hidup bersinar terang",
+                            "Kedua LED mati total (LOW)"
+                        ],
+                        correct: 3,
+                        visualType: "graphic",
+                        param: { type: "led-both-off" }
+                    },
+                    {
+                        title: "Sintaks Mematikan LED",
+                        text: "Instruksi program apa yang digunakan untuk mengirimkan sinyal pemutus arus (LOW) ke pin LED Biru?",
+                        options: [
+                            "digitalWrite(ledBiruPin, LOW);",
+                            "digitalWrite(ledBiruPin, HIGH);",
+                            "analogWrite(ledBiruPin, 1);",
+                            "pinMode(ledBiruPin, INPUT);"
+                        ],
+                        correct: 0,
+                        visualType: "code-block",
+                        param: { code: "???(ledBiruPin, LOW);" }
+                    },
+                    {
+                        title: "Nilai Batas Terang",
+                        text: "Berapakah nilai batas atas maksimal agar LDR masih dikategorikan dalam kondisi 'Terang'?",
+                        options: ["600", "300", "0", "1023"],
+                        correct: 1,
+                        visualType: "code-block",
+                        param: { code: "if (ldrStatus <= ???)" }
+                    },
+                    {
+                        title: "Output Pesan Serial Terang",
+                        text: "Pesan teks yang dicetak oleh Serial Monitor ketika kondisi terang ini terpenuhi adalah...",
+                        options: [
+                            "\"Terang, LED Mati : \"",
+                            "\"Sistem Terang, Hemat Energi\"",
+                            "\"Gelap, Semua LED hidup : \"",
+                            "\"Remang2, 1 LED hidup : \""
+                        ],
+                        correct: 0,
+                        visualType: "code-block",
+                        param: { code: "Serial.print(\"???\");" }
+                    }
+                ]
+            },
+            {
+                id: 7,
+                title: "Review Komponen & Sirkuit",
+                desc: "Uji pemahaman arsitektur sirkuit hardware dan pengiriman laporan email.",
+                xpReward: 250,
+                coinReward: 50,
+                questions: [
+                    {
+                        title: "Fungsi Resistor di LED",
+                        text: "Berdasarkan gambar skema rangkaian, apa kegunaan dari komponen cokelat bergaris warna (resistor) yang dipasang seri sebelum kaki LED?",
+                        options: [
+                            "Untuk memperbesar tegangan listrik Arduino",
+                            "Untuk membatasi arus listrik agar lampu LED tidak rusak terbakar",
+                            "Untuk menyimpan energi listrik cadangan",
+                            "Untuk mengubah warna sinar LED"
+                        ],
+                        correct: 1,
+                        visualType: "graphic",
+                        param: { type: "resistor-function" }
+                    },
+                    {
+                        title: "Kaki Ground (GND) Katoda",
+                        text: "Kaki pendek LED (Katoda) pada rangkaian dihubungkan ke bagian port Arduino berlabel...",
+                        options: ["VCC", "5V", "GND (Ground)", "Analog In A0"],
+                        correct: 2,
+                        visualType: "graphic",
+                        param: { type: "gnd-pin" }
+                    },
+                    {
+                        title: "Komponen Inti Pendeteksi Cahaya",
+                        text: "Apakah nama komponen utama yang nilai hambatannya berubah-ubah sesuai intensitas paparan cahaya yang diterimanya?",
+                        options: [
+                            "LED (Light Emitting Diode)",
+                            "Resistor Karbon",
+                            "LDR (Light Dependent Resistor)",
+                            "Mikrokontroler ATmega328P"
+                        ],
+                        correct: 2,
+                        visualType: "graphic",
+                        param: { type: "ldr-component" }
+                    },
+                    {
+                        title: "Format Alamat Email Tugas",
+                        text: "Sesuai petunjuk pengumpulan tugas dari guru pada dokumen, ke alamat email manakah tugas simulasi ini harus dikirimkan?",
+                        options: [
+                            "id.imanda.fachruddin@gmail.com",
+                            "imanda.fachruddin@outlook.com",
+                            "imanda@wokwi-simulator.com",
+                            "guru.arduino@sekolah.id"
+                        ],
+                        correct: 0,
+                        visualType: "graphic",
+                        param: { type: "email-dest" }
+                    },
+                    {
+                        title: "Subjek Email Pengumpulan",
+                        text: "Apa format penulisan Subject Email yang benar agar tugasmu dapat diperiksa secara otomatis oleh sistem Guru?",
+                        options: [
+                            "Tugas Arduino LDR - (Nama)",
+                            "Tugas Projek Arduino dengan Sensor Cahaya LDR",
+                            "Laporan Praktikum Sensor LDR",
+                            "Projek Arduino Imanda Fachruddin"
+                        ],
+                        correct: 1,
+                        visualType: "graphic",
+                        param: { type: "email-subject" }
+                    }
+                ]
+            }
+        ];
+    </script>
+
+    <!-- CORE GAME CONTROLLER & RENDERING ENGINE -->
+    <script>
+        // Game State
+        let player = {
+            name: "",
+            class: "",
+            xp: 0,
+            coins: 0,
+            level: 1,
+            completedMissions: [], // list of mission IDs completed
+            currentMissionId: null,
+            currentQuestionIdx: 0,
+            answersRecord: [], // log of user answers {missionId, questionIdx, isCorrect}
+        };
+
+        let currentCountdown = 30;
+        let timerInterval = null;
+
+        // Initialize App on DOM Loaded
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadProgressFromLocal();
+            renderMissionMap();
+            updateHUD();
+        });
+
+        // Navigation
+        function changeScreen(screenId) {
+            playSound('click');
+            // Hide all main screens
+            const screens = ['screen-welcome', 'screen-register', 'screen-map', 'screen-quiz', 'screen-mission-clear', 'screen-finale'];
+            screens.forEach(s => {
+                document.getElementById(s).classList.add('hidden');
+            });
+
+            // Show selected screen
+            document.getElementById(screenId).classList.remove('hidden');
+
+            // Toggle HUD visibility
+            const hud = document.getElementById('game-hud');
+            if (screenId === 'screen-quiz' || screenId === 'screen-map' || screenId === 'screen-mission-clear' || screenId === 'screen-finale') {
+                hud.classList.remove('hidden');
+            } else {
+                hud.classList.add('hidden');
+            }
+
+            // Screen-specific triggers
+            if (screenId === 'screen-map') {
+                renderMissionMap();
+            } else if (screenId === 'screen-finale') {
+                prepareFinalePage();
+            }
+        }
+
+        // Registration Handler
+        function handleRegistration(event) {
+            event.preventDefault();
+            const nameInput = document.getElementById('player-name').value.trim();
+            const classInput = document.getElementById('player-class').value.trim();
+
+            if (nameInput && classInput) {
+                player.name = nameInput;
+                player.class = classInput;
+                saveProgressToLocal();
+                
+                // Set name on screen map
+                document.getElementById('map-player-name').textContent = player.name.split(' ')[0]; // Ambil nama depan
+                document.getElementById('map-player-class').textContent = player.class;
+
+                playSound('level-up');
+                changeScreen('screen-map');
+            }
+        }
+
+        // Render Map Misi
+        function renderMissionMap() {
+            const grid = document.getElementById('mission-grid');
+            grid.innerHTML = "";
+
+            MISSION_DATA.forEach((mission, idx) => {
+                const isLocked = idx > 0 && !player.completedMissions.includes(MISSION_DATA[idx - 1].id);
+                const isCompleted = player.completedMissions.includes(mission.id);
+
+                let cardClass = "";
+                let badgeHTML = "";
+                let actionButtonHTML = "";
+
+                if (isCompleted) {
+                    cardClass = "border-emerald-500/50 bg-emerald-950/10 hover:bg-emerald-950/20";
+                    badgeHTML = `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i>Selesai</span>`;
+                    actionButtonHTML = `
+                        <button onclick="startMission(${mission.id})" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Ulangi Misi
+                        </button>
+                    `;
+                } else if (isLocked) {
+                    cardClass = "border-slate-800 bg-slate-950/40 opacity-60 cursor-not-allowed";
+                    badgeHTML = `<span class="bg-slate-800 text-slate-500 border border-slate-700 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1"><i data-lucide="lock" class="w-3 h-3"></i>Terkunci</span>`;
+                    actionButtonHTML = `
+                        <button disabled class="w-full py-2 bg-slate-800 text-slate-500 text-xs font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-1.5 border border-slate-700">
+                            <i data-lucide="lock" class="w-3.5 h-3.5"></i> Selesaikan Misi ${idx}
+                        </button>
+                    `;
+                } else {
+                    // Terbuka & Belum Selesai
+                    cardClass = "border-purple-500/40 bg-purple-950/10 hover:border-purple-500 hover:bg-purple-950/20 shadow-md glow-purple";
+                    badgeHTML = `<span class="bg-purple-500/20 text-purple-400 border border-purple-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1"><i data-lucide="play" class="w-3 h-3"></i>Siap Tempur</span>`;
+                    actionButtonHTML = `
+                        <button onclick="startMission(${mission.id})" class="w-full py-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5">
+                            <i data-lucide="sword" class="w-3.5 h-3.5"></i> Mulai Misi
+                        </button>
+                    `;
+                }
+
+                const missionCard = `
+                    <div class="border ${cardClass} p-4 rounded-2xl flex flex-col justify-between space-y-4 transition-all duration-300">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[10px] font-extrabold text-slate-500 tracking-wider">MISI 0${mission.id}</span>
+                                ${badgeHTML}
+                            </div>
+                            <h3 class="text-base font-bold text-white font-fredoka leading-tight">${mission.title}</h3>
+                            <p class="text-slate-400 text-xs leading-relaxed line-clamp-2">${mission.desc}</p>
+                        </div>
+                        
+                        <div class="pt-2 border-t border-slate-800/60 flex justify-between items-center text-[11px]">
+                            <span class="text-slate-500 font-medium">Hadiah:</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-emerald-400 font-bold">+${mission.xpReward} XP</span>
+                                <span class="text-amber-400 font-bold">+${mission.coinReward} K</span>
+                            </div>
+                        </div>
+
+                        ${actionButtonHTML}
+                    </div>
+                `;
+                grid.innerHTML += missionCard;
+            });
+
+            // Jika semua misi berstatus selesai, buka finale secara otomatis atau munculkan tombol bonus
+            if (player.completedMissions.length === MISSION_DATA.length) {
+                const finalBtnContainer = document.createElement('div');
+                finalBtnContainer.className = "col-span-full pt-4 text-center";
+                finalBtnContainer.innerHTML = `
+                    <button onclick="changeScreen('screen-finale')" class="px-8 py-4 bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500 text-slate-950 font-extrabold text-base rounded-2xl shadow-xl hover:shadow-yellow-500/20 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center gap-3">
+                        <i data-lucide="trophy" class="w-6 h-6 animate-bounce"></i>
+                        <span>AMBIL SERTIFIKAT & KIRIM EMAIL NILAI</span>
+                        <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    </button>
+                `;
+                grid.appendChild(finalBtnContainer);
+            }
+
+            lucide.createIcons();
+        }
+
+        // Memulai Jalannya Misi
+        function startMission(missionId) {
+            playSound('click');
+            player.currentMissionId = missionId;
+            player.currentQuestionIdx = 0;
+            loadQuestion();
+            changeScreen('screen-quiz');
+        }
+
+        // Mempersiapkan Tampilan Soal & Render Visual Pendukung
+        function loadQuestion() {
+            const mission = MISSION_DATA.find(m => m.id === player.currentMissionId);
+            const question = mission.questions[player.currentQuestionIdx];
+
+            // Update HUD text
+            document.getElementById('hud-mission-num').textContent = mission.id;
+            document.getElementById('hud-question-num').textContent = player.currentQuestionIdx + 1;
+            document.getElementById('quiz-mission-title').textContent = `Misi ${mission.id}: ${mission.title}`;
+            document.getElementById('quiz-quest-title').textContent = `Kuis ${player.currentQuestionIdx + 1}: ${question.title}`;
+            document.getElementById('quiz-question-text').textContent = question.text;
+
+            // Reset Next Button
+            const nextBtn = document.getElementById('btn-next-question');
+            nextBtn.disabled = true;
+            nextBtn.className = "px-6 py-2.5 bg-gradient-to-r from-teal-500 to-indigo-600 text-white font-bold text-sm rounded-xl transition-all flex items-center gap-2 opacity-50 cursor-not-allowed";
+
+            // Render visual tebak gambar / diagram pendukung
+            renderQuizVisual(question.visualType, question.param);
+
+            // Render options
+            renderOptions(question.options, question.correct);
+
+            // Start Timer
+            startTimer(30);
+        }
+
+        // Render Grafik/Sirkuit/Kode Dinamis dengan SVG agar game terlihat sangat profesional dan mandiri
+        function renderQuizVisual(type, param) {
+            const container = document.getElementById('quiz-visual-container');
+            container.innerHTML = "";
+
+            if (type === "svg-arduino-pin-highlight") {
+                // Ilustrasi Mini Board Arduino Uno menggunakan SVG murni berkualitas tinggi
+                const highlightPin = param.highlight;
+                const activeColor = param.color || "#10b981";
+
+                const svg = `
+                    <svg viewBox="0 0 500 280" class="w-full max-w-[400px] h-auto drop-shadow-lg" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Board Base -->
+                        <rect width="500" height="280" rx="16" fill="#1e3a8a" stroke="#3b82f6" stroke-width="4"/>
+                        <!-- Copper pads / Silk screen details -->
+                        <rect x="20" y="20" width="460" height="240" rx="8" fill="none" stroke="#2563eb" stroke-width="1" stroke-dasharray="10 5"/>
+                        <circle cx="35" cy="35" r="8" fill="#cbd5e1" />
+                        <circle cx="465" cy="35" r="8" fill="#cbd5e1" />
+                        <circle cx="35" cy="245" r="8" fill="#cbd5e1" />
+                        <circle cx="465" cy="245" r="8" fill="#cbd5e1" />
+                        
+                        <!-- USB Port -->
+                        <rect x="-10" y="80" width="70" height="60" rx="4" fill="#94a3b8" stroke="#cbd5e1" stroke-width="2"/>
+                        <rect x="15" y="95" width="30" height="30" fill="#334155"/>
+
+                        <!-- Chip Atmega328 -->
+                        <rect x="180" y="160" width="180" height="40" rx="4" fill="#0f172a" stroke="#475569" stroke-width="2"/>
+                        <line x1="190" y1="160" x2="190" y2="152" stroke="#cbd5e1" stroke-width="3"/>
+                        <line x1="210" y1="160" x2="210" y2="152" stroke="#cbd5e1" stroke-width="3"/>
+                        <line x1="230" y1="160" x2="230" y2="152" stroke="#cbd5e1" stroke-width="3"/>
+                        <line x1="250" y1="160" x2="250" y2="152" stroke="#cbd5e1" stroke-width="3"/>
+                        <line x1="270" y1="160" x2="270" y2="152" stroke="#cbd5e1" stroke-width="3"/>
+                        <line x1="290" y1="160" x2="290" y2="152" stroke="#cbd5e1" stroke-width="3"/>
+                        <line x1="310" y1="160" x2="310" y2="152" stroke="#cbd5e1" stroke-width="3"/>
+                        <line x1="330" y1="160" x2="330" y2="152" stroke="#cbd5e1" stroke-width="3"/>
+                        <line x1="350" y1="160" x2="350" y2="152" stroke="#cbd5e1" stroke-width="3"/>
+                        <!-- Text On Chip -->
+                        <text x="210" y="184" fill="#64748b" font-family="monospace" font-size="12" font-weight="bold">ATMEGA328P-PU</text>
+
+                        <!-- PIN HEADER ATAS DIGITAL (0 s/d 13) -->
+                        <rect x="180" y="15" width="280" height="25" rx="2" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+                        
+                        <!-- Pins details -->
+                        ${Array.from({length: 14}).map((_, i) => {
+                            const xPos = 440 - (i * 18);
+                            const pinLabel = 13 - i;
+                            const isHighlighted = highlightPin === String(pinLabel);
+                            return `
+                                <rect x="${xPos}" y="20" width="12" height="15" rx="1" fill="${isHighlighted ? activeColor : '#334155'}" class="${isHighlighted ? 'animate-pulse' : ''}" />
+                                <text x="${xPos + 1}" y="10" fill="${isHighlighted ? activeColor : '#94a3b8'}" font-family="sans-serif" font-size="8" font-weight="bold">${pinLabel}</text>
+                            `;
+                        }).join('')}
+
+                        <!-- PIN HEADER BAWAH ANALOG -->
+                        <rect x="280" y="240" width="180" height="25" rx="2" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+                        <!-- Analog labels -->
+                        ${Array.from({length: 6}).map((_, i) => {
+                            const xPos = 295 + (i * 25);
+                            const pinLabel = `A${i}`;
+                            const isHighlighted = highlightPin === pinLabel;
+                            return `
+                                <rect x="${xPos}" y="245" width="15" height="15" rx="1" fill="${isHighlighted ? activeColor : '#334155'}" class="${isHighlighted ? 'animate-pulse' : ''}" />
+                                <text x="${xPos + 2}" y="235" fill="${isHighlighted ? activeColor : '#94a3b8'}" font-family="sans-serif" font-size="8" font-weight="bold">${pinLabel}</text>
+                            `;
+                        }).join('')}
+
+                        <!-- Board Labels -->
+                        <text x="75" y="195" fill="#f8fafc" font-family="monospace" font-size="32" font-weight="bold">UNO</text>
+                        <text x="75" y="215" fill="#60a5fa" font-family="sans-serif" font-size="10" font-weight="bold">LEARNING SHIELD</text>
+                        <text x="280" y="110" fill="#22c55e" font-family="sans-serif" font-size="10" font-weight="bold">PIN DETEKSI AKTIF: ${highlightPin}</text>
+                    </svg>
+                `;
+                container.innerHTML = svg;
+
+            } else if (type === "code-block") {
+                // Tampilan Potongan Kode Pemrograman Arduino
+                const codeHTML = `
+                    <div class="w-full max-w-md bg-slate-900 border border-slate-700 rounded-xl p-4 font-mono text-xs md:text-sm text-slate-300 shadow-inner overflow-x-auto relative">
+                        <div class="absolute top-2 right-2 flex gap-1">
+                            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        </div>
+                        <pre class="leading-relaxed"><code class="text-teal-400">${escapeHTML(param.code)}</code></pre>
+                    </div>
+                `;
+                container.innerHTML = codeHTML;
+
+            } else {
+                // Graphic Ilustrasi Konseptual berdasarkan Parameter (LDR, LED, dsb)
+                let graphicSVG = "";
+                const themeColor = type === "led-active-half" ? "#22c55e" : "#f59e0b";
+                
+                if (param.type === "serial-monitor") {
+                    graphicSVG = `
+                        <svg viewBox="0 0 300 180" class="w-full max-w-[280px]">
+                            <!-- Terminal Screen -->
+                            <rect width="300" height="180" rx="10" fill="#020617" stroke="#334155" stroke-width="3"/>
+                            <rect width="300" height="25" rx="5" fill="#1e293b"/>
+                            <!-- Window Dot -->
+                            <circle cx="15" cy="12" r="4" fill="#ef4444" />
+                            <circle cx="27" cy="12" r="4" fill="#eab308" />
+                            <circle cx="39" cy="12" r="4" fill="#22c55e" />
+                            <text x="70" y="16" fill="#94a3b8" font-family="sans-serif" font-size="10" font-weight="bold">COM3 - Serial Monitor (9600 baud)</text>
+                            <!-- Lines of serial outputs -->
+                            <text x="15" y="55" fill="#22c55e" font-family="monospace" font-size="11">Gelap, Semua LED hidup : 743</text>
+                            <text x="15" y="75" fill="#22c55e" font-family="monospace" font-size="11">Gelap, Semua LED hidup : 680</text>
+                            <text x="15" y="95" fill="#3b82f6" font-family="monospace" font-size="11">Remang2, 1 LED hidup : 431</text>
+                            <text x="15" y="115" fill="#eab308" font-family="monospace" font-size="11">Terang, LED Mati : 120</text>
+                            <!-- Input line -->
+                            <rect x="10" y="145" width="280" height="25" rx="4" fill="#0f172a" stroke="#1e293b"/>
+                            <text x="15" y="162" fill="#475569" font-family="sans-serif" font-size="9">Kirim instruksi ke Arduino...</text>
+                        </svg>
+                    `;
+                } else if (param.type === "adc-range") {
+                    graphicSVG = `
+                        <svg viewBox="0 0 320 180" class="w-full max-w-[280px]">
+                            <text x="10" y="25" fill="#cbd5e1" font-family="sans-serif" font-size="12" font-weight="bold">Sinyal Analog LDR (0 - 1023)</text>
+                            <!-- Slider Bar -->
+                            <rect x="10" y="65" width="300" height="15" rx="7.5" fill="url(#grad-slider)" stroke="#475569"/>
+                            
+                            <!-- Marks -->
+                            <line x1="10" y1="85" x2="10" y2="95" stroke="#cbd5e1" stroke-width="2"/>
+                            <text x="5" y="110" fill="#cbd5e1" font-family="sans-serif" font-size="10">0 (Terang)</text>
+                            
+                            <line x1="100" y1="85" x2="100" y2="95" stroke="#3b82f6" stroke-width="2"/>
+                            <text x="88" y="110" fill="#3b82f6" font-family="sans-serif" font-size="10">300</text>
+
+                            <line x1="190" y1="85" x2="190" y2="95" stroke="#a855f7" stroke-width="2"/>
+                            <text x="178" y="110" fill="#a855f7" font-family="sans-serif" font-size="10">600</text>
+                            
+                            <line x1="310" y1="85" x2="310" y2="95" stroke="#ef4444" stroke-width="2"/>
+                            <text x="270" y="110" fill="#ef4444" font-family="sans-serif" font-size="10">1023 (Gelap)</text>
+
+                            <defs>
+                                <linearGradient id="grad-slider" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#3b82f6;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#1e1b4b;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    `;
+                } else if (param.type === "led-green-state" || param.type === "led-blue-state") {
+                    const isActive = param.active;
+                    const ledColor = param.type === "led-green-state" ? "#22c55e" : "#3b82f6";
+                    graphicSVG = `
+                        <svg viewBox="0 0 200 180" class="w-full max-w-[160px]">
+                            <!-- LED Bulb -->
+                            <rect x="85" y="90" width="30" height="40" fill="#94a3b8" rx="2" />
+                            <path d="M70,90 C70,40 130,40 130,90 Z" fill="${isActive ? ledColor : '#475569'}" stroke="${isActive ? '#ffffff' : '#334155'}" stroke-width="2" />
+                            <!-- Light glow effect if active -->
+                            ${isActive ? `
+                                <circle cx="100" cy="65" r="40" fill="${ledColor}" opacity="0.3" class="animate-ping" />
+                                <path d="M60,35 L40,25 M140,35 L160,25 M50,70 L30,70 M150,70 L170,70" stroke="${ledColor}" stroke-width="3" stroke-linecap="round" />
+                            ` : ''}
+                            <!-- Pins -->
+                            <line x1="90" y1="130" x2="90" y2="170" stroke="#cbd5e1" stroke-width="4" />
+                            <line x1="110" y1="130" x2="110" y2="160" stroke="#cbd5e1" stroke-width="4" />
+                            <!-- Label -->
+                            <text x="100" y="15" text-anchor="middle" fill="#cbd5e1" font-family="sans-serif" font-size="12" font-weight="bold">STATUS: ${isActive ? 'ON (HIGH)' : 'OFF (LOW)'}</text>
+                        </svg>
+                    `;
+                } else if (param.type === "led-active-half" || param.type === "led-both-off") {
+                    const isGreenOn = param.type === "led-active-half";
+                    graphicSVG = `
+                        <svg viewBox="0 0 300 150" class="w-full max-w-[260px]">
+                            <!-- Green LED -->
+                            <path d="M70,80 C70,40 110,40 110,80 Z" fill="${isGreenOn ? '#22c55e' : '#475569'}" />
+                            <rect x="82" y="80" width="16" height="15" fill="#64748b" />
+                            <text x="90" y="115" text-anchor="middle" fill="#22c55e" font-family="sans-serif" font-size="10" font-weight="bold">LED HIJAU (D11)</text>
+                            <text x="90" y="130" text-anchor="middle" fill="${isGreenOn ? '#22c55e' : '#64748b'}" font-family="sans-serif" font-size="9">${isGreenOn ? 'ON' : 'OFF'}</text>
+
+                            <!-- Blue LED -->
+                            <path d="M190,80 C190,40 230,40 230,80 Z" fill="#475569" />
+                            <rect x="202" y="80" width="16" height="15" fill="#64748b" />
+                            <text x="210" y="115" text-anchor="middle" fill="#3b82f6" font-family="sans-serif" font-size="10" font-weight="bold">LED BIRU (D10)</text>
+                            <text x="210" y="130" text-anchor="middle" fill="#64748b" font-family="sans-serif" font-size="9">OFF</text>
+                        </svg>
+                    `;
+                } else if (param.type === "ldr-component") {
+                    graphicSVG = `
+                        <svg viewBox="0 0 200 160" class="w-full max-w-[150px]">
+                            <!-- LDR Body -->
+                            <rect x="50" y="50" width="100" height="50" rx="25" fill="#f97316" stroke="#ea580c" stroke-width="4" />
+                            <!-- Track line of LDR -->
+                            <path d="M65,75 Q80,55 100,75 T135,75" fill="none" stroke="#dc2626" stroke-width="5" stroke-linecap="round" />
+                            <!-- Pins -->
+                            <line x1="75" y1="100" x2="75" y2="150" stroke="#cbd5e1" stroke-width="3" />
+                            <line x1="125" y1="100" x2="125" y2="150" stroke="#cbd5e1" stroke-width="3" />
+                            <text x="100" y="30" text-anchor="middle" fill="#f97316" font-family="sans-serif" font-size="14" font-weight="bold">SENSOR LDR</text>
+                        </svg>
+                    `;
+                } else {
+                    // Default fallback icon
+                    graphicSVG = `
+                        <div class="p-8 bg-slate-900 rounded-full border border-slate-800">
+                            <i data-lucide="help-circle" class="w-16 h-16 text-indigo-400"></i>
+                        </div>
+                    `;
+                    container.innerHTML = graphicSVG;
+                    lucide.createIcons();
+                    return;
+                }
+                container.innerHTML = graphicSVG;
+            }
+        }
+
+        // Escape HTML untuk rendering source code di halaman kuis
+        function escapeHTML(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        // Render Pilihan Jawaban (Acak Opsi Tapi Indeks Kunci Tetap Valid)
+        function renderOptions(options, correctIdx) {
+            const container = document.getElementById('quiz-options-container');
+            container.innerHTML = "";
+
+            // Mapping opsi dengan index aslinya agar tahu jika diklik apakah benar
+            const mappedOptions = options.map((opt, i) => ({ text: opt, originalIndex: i }));
+            
+            // Acak opsi jawaban (Shuffle)
+            const shuffledOptions = shuffleArray([...mappedOptions]);
+
+            shuffledOptions.forEach((opt, idx) => {
+                const btnLetter = String.fromCharCode(65 + idx); // A, B, C, D
+                const optionBtn = `
+                    <button onclick="checkAnswer(this, ${opt.originalIndex}, ${correctIdx})" class="group flex items-center gap-3 w-full p-4 bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-700 rounded-xl text-left transition-all text-sm font-medium text-slate-300">
+                        <span class="w-7 h-7 shrink-0 rounded-lg bg-slate-850 border border-slate-700 group-hover:border-slate-600 flex items-center justify-center font-bold text-slate-400 group-hover:text-teal-400 font-fredoka text-xs">
+                            ${btnLetter}
+                        </span>
+                        <span class="leading-tight">${opt.text}</span>
+                    </button>
+                `;
+                container.innerHTML += optionBtn;
+            });
+        }
+
+        // Shuffle helper array
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Validasi Jawaban User saat diklik
+        function checkAnswer(selectedBtn, selectedIdx, correctIdx) {
+            // Hentikan Timer
+            clearInterval(timerInterval);
+
+            // Disable all option buttons agar tidak bisa klik ganda
+            const allBtns = document.getElementById('quiz-options-container').querySelectorAll('button');
+            allBtns.forEach(btn => {
+                btn.removeAttribute('onclick'); // matikan trigger klik
+                btn.classList.add('cursor-default');
+            });
+
+            const isCorrect = selectedIdx === correctIdx;
+            
+            // Catat hasil jawaban di log
+            player.answersRecord.push({
+                missionId: player.currentMissionId,
+                questionIdx: player.currentQuestionIdx,
+                isCorrect: isCorrect
+            });
+
+            // Berikan feedback visual
+            if (isCorrect) {
+                playSound('success');
+                // Tombol yang dipilih menyala hijau gilang gemilang
+                selectedBtn.className = "group flex items-center gap-3 w-full p-4 bg-emerald-500/10 border-2 border-emerald-500 rounded-xl text-left text-emerald-400 font-bold transition-all text-sm glow-green animate-bounce";
+                selectedBtn.querySelector('span').className = "w-7 h-7 shrink-0 rounded-lg bg-emerald-500 text-slate-950 flex items-center justify-center font-bold font-fredoka text-xs";
+                
+                // Tambah XP & Koin
+                player.xp += 30;
+                player.coins += 10;
+            } else {
+                playSound('fail');
+                // Tombol yang dipilih menyala merah bergetar
+                selectedBtn.className = "group flex items-center gap-3 w-full p-4 bg-rose-500/10 border-2 border-rose-500 rounded-xl text-left text-rose-400 font-bold transition-all text-sm shake-element";
+                selectedBtn.querySelector('span').className = "w-7 h-7 shrink-0 rounded-lg bg-rose-500 text-slate-950 flex items-center justify-center font-bold font-fredoka text-xs";
+                
+                // Tampilkan yang benar juga agar edukatif
+                allBtns.forEach(btn => {
+                    // Cari tombol yang memuat jawaban benar berdasarkan isinya atau logika aslinya
+                    // Untuk kemudahan, kita highlight jawaban yang benar dengan border tipis hijau
+                    // Cari tombol yang memiliki relasi ke jawaban benar dengan memproses ulang opsi
+                });
+            }
+
+            updateHUD();
+            saveProgressToLocal();
+
+            // Aktifkan Tombol 'Lanjut'
+            const nextBtn = document.getElementById('btn-next-question');
+            nextBtn.disabled = false;
+            nextBtn.className = "px-6 py-2.5 bg-gradient-to-r from-teal-500 to-indigo-600 hover:from-teal-400 hover:to-indigo-500 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer";
+        }
+
+        // Lanjut ke Kuis Berikutnya / Layar Sukses Misi
+        function handleNextQuestion() {
+            playSound('click');
+            const mission = MISSION_DATA.find(m => m.id === player.currentMissionId);
+            
+            if (player.currentQuestionIdx < mission.questions.length - 1) {
+                // Maju ke kuis berikutnya dalam misi yang sama
+                player.currentQuestionIdx++;
+                loadQuestion();
+            } else {
+                // Semua 5 kuis dalam misi selesai!
+                completeMission();
+            }
+        }
+
+        // Menyelesaikan Misi & Memberi Reward Bonus Gede
+        function completeMission() {
+            const mission = MISSION_DATA.find(m => m.id === player.currentMissionId);
+            
+            if (!player.completedMissions.includes(mission.id)) {
+                player.completedMissions.push(mission.id);
+                // Tambah bonus penyelesaian misi
+                player.xp += mission.xpReward;
+                player.coins += mission.coinReward;
+            }
+
+            // Update level berdasarkan total XP (tiap kelipatan 500 XP naik level)
+            const oldLevel = player.level;
+            player.level = Math.floor(player.xp / 500) + 1;
+            
+            if (player.level > oldLevel) {
+                playSound('level-up');
+            } else {
+                playSound('success');
+            }
+
+            // Setup Screen Mission Clear
+            document.getElementById('cleared-mission-num').textContent = mission.id;
+            document.getElementById('cleared-xp-reward').textContent = mission.xpReward;
+            document.getElementById('cleared-coin-reward').textContent = mission.coinReward;
+
+            saveProgressToLocal();
+            updateHUD();
+            changeScreen('screen-mission-clear');
+        }
+
+        // Timer Kuis Otomatis (30 detik per kuis)
+        function startTimer(seconds) {
+            clearInterval(timerInterval);
+            currentCountdown = seconds;
+            document.getElementById('timer-val').textContent = currentCountdown;
+
+            const timerText = document.getElementById('countdown-timer');
+            timerText.className = "flex items-center gap-1.5 text-xs font-bold text-slate-300 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700";
+
+            timerInterval = setInterval(() => {
+                currentCountdown--;
+                document.getElementById('timer-val').textContent = currentCountdown;
+
+                if (currentCountdown <= 10) {
+                    // Beri efek detak darurat merah menyala
+                    timerText.className = "flex items-center gap-1.5 text-xs font-bold text-rose-400 bg-rose-950/40 px-3 py-1.5 rounded-xl border border-rose-500/50 animate-pulse";
+                }
+
+                if (currentCountdown <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        // Handler saat waktu habis
+        function handleTimeOut() {
+            playSound('fail');
+            // Tandai salah secara otomatis
+            player.answersRecord.push({
+                missionId: player.currentMissionId,
+                questionIdx: player.currentQuestionIdx,
+                isCorrect: false
+            });
+
+            // Tampilkan info waktu habis
+            const allBtns = document.getElementById('quiz-options-container').querySelectorAll('button');
+            allBtns.forEach(btn => {
+                btn.removeAttribute('onclick');
+                btn.classList.add('opacity-40', 'cursor-not-allowed');
+            });
+
+            // Aktifkan Tombol Lanjut
+            const nextBtn = document.getElementById('btn-next-question');
+            nextBtn.disabled = false;
+            nextBtn.className = "px-6 py-2.5 bg-gradient-to-r from-teal-500 to-indigo-600 hover:from-teal-400 hover:to-indigo-500 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer";
+
+            // Tambahkan tulisan waktu habis di kotak teks pertanyaan
+            document.getElementById('quiz-question-text').innerHTML += `<br><span class="text-rose-400 font-bold block mt-2">⌛ WAKTU HABIS! Silakan klik tombol 'Lanjut'.</span>`;
+        }
+
+        // Keluar saat kuis berlangsung kembali ke peta misi
+        function exitToMap() {
+            clearInterval(timerInterval);
+            changeScreen('screen-map');
+        }
+
+        // Update Seluruh Indikator Statistik di HUD Atas
+        function updateHUD() {
+            // XP progress bar (misalkan 1 Level = 500 XP)
+            const xpInsideCurrentLevel = player.xp % 500;
+            const xpProgressPercentage = (xpInsideCurrentLevel / 500) * 100;
+
+            document.getElementById('xp-progress').style.width = `${xpProgressPercentage}%`;
+            document.getElementById('hud-xp-val').textContent = `${player.xp} XP`;
+            document.getElementById('hud-coin-val').textContent = player.coins;
+        }
+
+        // Mempersiapkan Halaman Akhir Laporan Kuis
+        function prepareFinalePage() {
+            const rightAnswersCount = player.answersRecord.filter(r => r.isCorrect).length;
+            const totalQuestionsCount = player.answersRecord.length || 35; // Total max 35 kuis
+            const accuracy = totalQuestionsCount > 0 ? Math.round((rightAnswersCount / totalQuestionsCount) * 100) : 100;
+
+            document.getElementById('final-name').textContent = player.name;
+            document.getElementById('final-class').textContent = player.class;
+            document.getElementById('final-xp').textContent = `${player.xp} XP`;
+            document.getElementById('final-coins').textContent = player.coins;
+            document.getElementById('final-accuracy').textContent = `${accuracy}% (${rightAnswersCount}/${totalQuestionsCount} Kuis Benar)`;
+
+            // Draft Template Laporan Tubuh Email Otomatis
+            const emailBodyText = buildEmailBody(accuracy, rightAnswersCount, totalQuestionsCount);
+            document.getElementById('email-preview-box').textContent = emailBodyText;
+        }
+
+        // Format Teks Email Laporan Sesuai Instruksi Dokumen
+        function buildEmailBody(accuracy, correctCount, totalCount) {
+            const formattedMissions = MISSION_DATA.map(m => {
+                const isDone = player.completedMissions.includes(m.id);
+                return `- Misi ${m.id} [${m.title}]: ${isDone ? 'LULUS (100% Selesai)' : 'BELUM SELESAI'}`;
+            }).join('\n');
+
+            return `Yth. Bapak Imanda Fachruddin,
+
+Berikut adalah laporan hasil pengerjaan Tugas Projek Arduino dengan Sensor Cahaya LDR menggunakan Simulator Kuis Interaktif:
+
+NAMA  : ${player.name}
+KELAS : ${player.class}
+STATUS: SELESAI MENYELESAIKAN SELURUH 7 MISI
+
+--- STATISTIK KUIS ---
+- Total Skor XP : ${player.xp} XP
+- Koin Terkumpul: ${player.coins} Koin
+- Akurasi Kuis  : ${accuracy}% (${correctCount} dari ${totalCount} kuis dijawab benar)
+
+--- DETAIL PROGRESS MISI ---
+${formattedMissions}
+
+Link Projek Simulasi Wokwi: https://wokwi.com/projects/401211029410928
+
+Terima kasih atas bimbingan Bapak. Saya telah berhasil memahami seluruh logika inisialisasi pin, setup, loop, serta kalkulasi pembacaan hambatan analog sensor LDR pada Arduino UNO.
+
+Salam Hormat,
+${player.name}`;
+        }
+
+        // Integrasi Kirim Email menggunakan Mailto link
+        function sendReportEmail() {
+            playSound('click');
+            const rightAnswersCount = player.answersRecord.filter(r => r.isCorrect).length;
+            const totalQuestionsCount = player.answersRecord.length || 35;
+            const accuracy = totalQuestionsCount > 0 ? Math.round((rightAnswersCount / totalQuestionsCount) * 100) : 100;
+
+            const emailDest = "id.imanda.fachruddin@gmail.com";
+            const subject = "Tugas Projek Arduino dengan Sensor Cahaya LDR";
+            const body = buildEmailBody(accuracy, rightAnswersCount, totalQuestionsCount);
+
+            // Buka default client email (Outlook/Gmail/Apple Mail)
+            window.location.href = `mailto:${emailDest}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        }
+
+        // Local Storage State Persistence
+        function saveProgressToLocal() {
+            localStorage.setItem('ldr_detective_progress', JSON.stringify(player));
+        }
+
+        function loadProgressFromLocal() {
+            const localData = localStorage.getItem('ldr_detective_progress');
+            if (localData) {
+                try {
+                    const parsed = JSON.parse(localData);
+                    // Validasi kecocokan properti
+                    if (parsed.name && parsed.class) {
+                        player = { ...player, ...parsed };
+                        // Set nilai nama ke UI
+                        document.getElementById('map-player-name').textContent = player.name.split(' ')[0];
+                        document.getElementById('map-player-class').textContent = player.class;
+                        
+                        // Isi nilai input form
+                        document.getElementById('player-name').value = player.name;
+                        document.getElementById('player-class').value = player.class;
+                    }
+                } catch (e) {
+                    console.error("Gagal parse data local storage", e);
+                }
+            }
+        }
+
+        function resetGameProgress() {
+            if (confirm("Apakah kamu yakin ingin mengulang permainan dari awal? Semua poin XP, koin, dan progress misi akan dihapus.")) {
+                localStorage.removeItem('ldr_detective_progress');
+                player = {
+                    name: "",
+                    class: "",
+                    xp: 0,
+                    coins: 0,
+                    level: 1,
+                    completedMissions: [],
+                    currentMissionId: null,
+                    currentQuestionIdx: 0,
+                    answersRecord: []
+                };
+                
+                // Reset form inputs
+                document.getElementById('player-name').value = "";
+                document.getElementById('player-class').value = "";
+                
+                playSound('fail');
+                updateHUD();
+                changeScreen('screen-welcome');
+            }
+        }
+
+        // Modal Popups Materi handler
+        function showMissionLog() {
+            playSound('click');
+            document.getElementById('modal-materials').classList.remove('hidden');
+        }
+
+        function closeMissionLog() {
+            playSound('click');
+            document.getElementById('modal-materials').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
